@@ -20,6 +20,9 @@ Functional programming makes programs easier to reason about. Add in persistant 
 
 mu tries to give you tools for finding a happy place between pure functional programming and imperative state mutation.  With mu, you create a few persistent data structures, but have observable updates, and can effectively mutate your data without having to manually copy a bunch of objects. You can make your bindings as coarse or as fine grained as you need to, while still getting the benefits of functional, persistent data structures.
 
+### Usage
+
+Big TODO. Sorry. Try checking out arom-test.js for now.
 
 ### computes
 
