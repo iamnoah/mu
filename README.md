@@ -2,7 +2,7 @@
 
 A simple library for working with immutable data in mutable+observable MV* applications.
 
-### Instalation
+### Installation
 
     bower install --save https://github.com/iamnoah/mu.git
 
