@@ -8,11 +8,11 @@ A simple library for working with immutable data in mutable+observable MV* appli
 
 mu depends on lodash. It will work with underscore if you map mu to use underscore instead of lodash in your require.confg:
 
-   map: {
-       "mu": {
+    map: {
+        "mu": {
            "lodash": "underscore"
-       }
-   }
+        }
+    }
 
 ### Description
 
