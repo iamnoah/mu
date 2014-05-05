@@ -1,0 +1,17 @@
+{
+  "name": "mu",
+  "version": "0.0.1",
+  "authors": [
+    "Noah Sloan <nsloan@spredfast.com>"
+  ],
+  "description": "Functional model utilities",
+  "main": "dist/mu.js",
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "src",
+    "test"
+  ]
+}

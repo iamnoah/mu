@@ -1,0 +1,22 @@
+{
+	"browser": false,
+	"curly": true,
+	"es5": true,
+	"esnext": false,
+	"eqnull": true,
+	"eqeqeq": true,
+	"forin": true,
+	"immed": true,
+	"latedef": true,
+	"maxcomplexity": 5,
+	"maxdepth": 5,
+	"maxlen": 100,
+	"newcap": true,
+	"noarg": true,
+	"node": true,
+	"smarttabs": true,
+	"strict": true,
+	"trailing": true,
+	"undef": true,
+	"unused": true
+}
