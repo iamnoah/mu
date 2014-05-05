@@ -22,7 +22,7 @@ mu tries to give you tools for finding a happy place between pure functional pro
 
 ### Usage
 
-Big TODO. Sorry. Try checking out arom-test.js for now.
+Big TODO. Sorry. Try checking out atom-test.js for now.
 
 ### computes
 
