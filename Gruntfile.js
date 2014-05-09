@@ -18,6 +18,9 @@ module.exports = function(grunt) {
     browserify: {
       mu: {
         options: {
+          bundleOptions: {
+            standalone: "mu",
+          },
           exclude: ["lodash"]
         },
         src: "src/mu.js",
@@ -25,6 +28,9 @@ module.exports = function(grunt) {
       },
       compute: {
         options: {
+          bundleOptions: {
+            standalone: "mu.compute",
+          },
           exclude: ["lodash"]
         },
         src: "src/compute.js",
