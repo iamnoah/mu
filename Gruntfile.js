@@ -21,7 +21,6 @@ module.exports = function(grunt) {
           bundleOptions: {
             standalone: "mu",
           },
-          exclude: ["lodash"]
         },
         src: "src/mu.js",
         dest: "dist/mu.js"
@@ -31,7 +30,6 @@ module.exports = function(grunt) {
           bundleOptions: {
             standalone: "mu.compute",
           },
-          exclude: ["lodash"]
         },
         src: "src/compute.js",
         dest: "dist/compute.js"

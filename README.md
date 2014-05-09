@@ -6,14 +6,6 @@ A simple library for working with immutable data in mutable+observable MV* appli
 
     bower install --save https://github.com/iamnoah/mu.git
 
-mu depends on lodash. It will work with underscore if you map mu to use underscore instead of lodash in your require.confg:
-
-    map: {
-        "mu": {
-           "lodash": "underscore"
-        }
-    }
-
 ### Description
 
 Functional programming makes programs easier to reason about. Add in persistant data structures, and whole classes of errors can be ruled out, and performance can be optimized easily. But at some point, you need to mutate some state. Being able to observe and bind state changes reduces boiler plate and simplifies application logic.
