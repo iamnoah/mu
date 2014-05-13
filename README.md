@@ -29,15 +29,15 @@ Atoms are an interface for manipulating persistent data structures and creating 
 
 mu does not directly depend on a compute implementation, so you must wrap the state yourself if you want to observe it.
 
-    var compute = compute(myData);
-    var atom = new Atom(compute);
-    compute.bind("change", function() {...})
+    var dataCompute = computed(myData);
+    var atom = new Atom(dataCompute);
+    dataCompute.bind("change", function() {...})
     var baz = atom.focus("foo", "array", 2, "bar", "baz");
     baz() === data().foo.array[2].bar.baz
-    baz.set(newValue) // compute is updated and change handler is called
+    baz.set(newValue) // dataCompute is updated and change handler is called
 
-    // you can also create a compute from baz
-    var bazCompute = compute(baz);
+    // you can also create a computed from baz
+    var bazCompute = computed(baz);
     bazCompute.bind("change", function() {...});
 
     atom.set({...}) // triggers an update of bazCompute
