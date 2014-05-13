@@ -86,11 +86,22 @@ describe("Lens", function() {
 
 	describe("#typed", function() {
 		function Baz(data) {
+			if(data instanceof Baz) {
+				return data;
+			}
 			Object.defineProperty(this, "qux", {
+				enumerable: true,
 				get: function() {
-					return data && data.qux;
+					return data && (data.quxx || data.qux);
 				}
 			});
+			Object.defineProperty(this, "quxx", {
+				enumerable: false,
+				get: function() {
+					return 999;
+				}
+			});
+
 			Object.freeze(this);
 		}
 		var foo = {
@@ -109,6 +120,7 @@ describe("Lens", function() {
 			baz.get(foo).should.be.an.instanceOf(Baz);
 			baz.set(foo, new Baz({qux: 456})).bar[0].baz.should.be.an.instanceOf(Baz);
 			baz.set(foo, new Baz({qux: 456})).bar[0].baz.qux.should.eql(456);
+			baz.set(foo, {qux: 456}).bar[0].baz.should.be.an.instanceOf(Baz);
 		});
 		
 		it("should create a new instance when setting a sub-prop", function() {

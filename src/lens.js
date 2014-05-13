@@ -48,12 +48,22 @@
 
 	Lens.Last = Lens.nth(-1);
 
+	function copyObj(obj) {
+		var copy = {};
+		for(var p in obj) {
+			if (_.has(obj, p)) {
+				copy[p] = obj[p];
+			}
+		}
+		return copy;
+	}
+
 	Lens.prop = function(property) {
 		return new Lens(function(obj) {
 			return obj && obj[property];
 		}, function(obj, val) {
 			// shallow copy and write
-			var copy = _.clone(obj || {});
+			var copy = copyObj(obj || {});
 			copy[property] = val;
 			return copy;
 		});
