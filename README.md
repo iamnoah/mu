@@ -42,6 +42,10 @@ mu does not directly depend on a compute implementation, so you must wrap the st
 
     atom.set({...}) // triggers an update of bazCompute
 
+### Supported Environments
+
+mu should hapilly run in any ES5 environement. i.e., IE9+, or node.
+
 ### Converting Data
 
 By default, Atoms work on plain objects and arrays. Whenever you use an Atom to set a value, mu makes copies of any objects and arrays in the path and replaces the changed objects with references to the new values.
@@ -66,6 +70,15 @@ If you have Classes in your data structure, you can define an Atom Type that wil
     root.focus("foo", "bar", "baz").get() instanceof Baz
     root.focus("foo", "bar", "baz").get().qux === 123
 
+#### Caveat
+
+Anytime an object is updated, mu will shallow copy all the enumerable properties into a plain object, make changes to it, and then call the function you pass it as a constructor. e.g., `new YourClass(newData)`.
+
+That means:
+
+ * If your class has non-enumerable state, it will be lost. Keep it simple.
+ * If your class has state that you do not want copied (e.g., bound functions,) make it non-enumerable.
+ * `Object.defineProperty` is your friend. getters and setters are recommended.
 
 ### Lenses
 
