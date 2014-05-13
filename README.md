@@ -33,10 +33,10 @@ mu does not directly depend on a compute implementation, so you must wrap the st
     var atom = new Atom(dataCompute);
     dataCompute.bind("change", function() {...})
     var baz = atom.focus("foo", "array", 2, "bar", "baz");
-    baz() === data().foo.array[2].bar.baz
+    baz() === dataCompute().foo.array[2].bar.baz
     baz.set(newValue) // dataCompute is updated and change handler is called
 
-    // you can also create a computed from baz
+    // you can also create a compute from baz
     var bazCompute = computed(baz);
     bazCompute.bind("change", function() {...});
 
