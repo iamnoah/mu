@@ -14,24 +14,64 @@ mu tries to give you tools for finding a happy place between pure functional pro
 
 ### Usage
 
-Big TODO. Sorry. Try checking out atom-test.js for now.
+### Atoms
+
+Atoms are an interface for manipulating persistent data structures and creating new Atoms focused on specific parts of the data. e.g.,
+
+    var atom = new Atom(myData);
+    var baz = atom.focus("foo", "array", 2, "bar", "baz");
+    baz.get() === myData.foo.array[2].bar.baz
+    baz.set(newValue)
+
+    atom.get() === { foo: [..., ..., { bar: { baz: newValue } }] }
 
 ### computes
 
-Computes are used to hold the state. mu does not directly depend on a compute implementation, so you must wrap the state yourself.
+mu does not directly depend on a compute implementation, so you must wrap the state yourself if you want to observe it.
 
-### Atoms
-
-Atoms provide an interface for mutiating and breaking down a single immutable structure, wrapped by a compute.
-
-The get(path, to, desired, property) method can be used to create compute functions for any property in the data. e.g.,
-
-	var atom = Atom(data);
-    var baz = atom.get("foo", "array", 2, "bar", "baz");
+    var compute = compute(myData);
+    var atom = new Atom(compute);
+    compute.bind("change", function() {...})
+    var baz = atom.focus("foo", "array", 2, "bar", "baz");
     baz() === data().foo.array[2].bar.baz
-    baz(newValue) // equivalent to copying data()
-    // setting the value of foo.array[2].bar.baz
-    // and setting via data(copy)
+    baz.set(newValue) // compute is updated and change handler is called
+
+    // you can also create a compute from baz
+    var bazCompute = compute(baz);
+    bazCompute.bind("change", function() {...});
+
+    atom.set({...}) // triggers an update of bazCompute
+
+### Converting Data
+
+By default, Atoms work on plain objects and arrays. Whenever you use an Atom to set a value, mu makes copies of any objects and arrays in the path and replaces the changes objects with references to the new values.
+
+If you have Classes in your data structure, you can define an Atom Type that will makes copies of your Class instead of using plain objects:
+
+    var convertFoo = Atom.convert(Foo, {
+    	bar: {
+    		baz: Atom.convert(Baz)
+    	}
+    });
+    var RootAtom = Atom.define(Root, {
+    	foo: convertFoo,
+    	qux: convertFoo,
+    });
+    
+    // fromJSON will use your converters to create your initial data
+    var root = new RootAtom(compute(RootAtom.fromJSON(rawData)));
+    root.get() instanceof Root
+    root.focus("foo").get() instanceof Foo
+    root.focus("foo", "bar", "baz", "qux").set(123)
+    root.focus("foo", "bar", "baz").get() instanceof Baz
+    root.focus("foo", "bar", "baz").get().qux === 123
+
+
+### Lenses
+
+Atom uses functional lenses internally to create focused computes. You can pass your own Lenses to focus and they will be inserted into the path.
+
+    TODO example
 
 ### mu's compute
 

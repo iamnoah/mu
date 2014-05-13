@@ -12,7 +12,7 @@
 	 * @return a function like that returned by atom(...) suitable for 
 	 * creating a compute.
 	 */
-	function compose(lens, computed) {
+	function compose(lens, computed, convert) {
 		function getterSetter(newValue) {
 			if (arguments.length) {
 				computed(Object.freeze(lens.set(computed(), newValue)));
@@ -26,7 +26,41 @@
 		getterSetter.set = function(newValue) {
 			getterSetter(newValue);
 		};
+		getterSetter.focus = focuser(getterSetter, convert);
 		return getterSetter;
+	}
+
+	function focuser(computed, convert) {
+		return function() {
+			// insert converters along the path so that our lens correctly sets values
+			var path = _.toArray(arguments).reduce(function(state, prop) {
+				var convert = state.convert || {};
+				// array, so the converter applies to each item
+				// pass it along as is so it will be applied next
+				if (typeof prop === "number") {
+					return {
+						convert: convert,
+						path: state.path.concat([prop]),
+					};
+				// convert the current object, then get the prop and its converters
+				} else if (convert.$this) {
+					return {
+						convert: convert[prop],
+						path: state.path.concat([Lens.typed(convert.$this), prop]),
+					};
+				// no converter for the current object, but keep descending
+				} else {
+					return {
+						convert: convert[prop],
+						path: state.path.concat([prop]),
+					};
+				}
+			}, {
+				convert: convert,
+				path: [],
+			}).path;
+			return compose(Lens.path.apply(Lens, path), computed);
+		};
 	}
 
 	/**
@@ -38,29 +72,72 @@
 	 * Atom provides the following semantics:
 
 		var state = Atom(stateCompute);
-		var baz = state("foo", "bar", 3, "baz");
+		var baz = state.focus("foo", "bar", 3, "baz");
 		baz.get() => stateCompute().foo.bar[3].baz
 		baz() => shorthand for get
 		baz.set(123) => sets stateCompute().foo.bar[3].baz to 123,
 			stateCompute will be updated
 		baz(123) => shorthand for set
+
+		baz.focus("futher", "refinement")
 	 *
-	 * The property function returned by Atom#get is suitable for creating a CanJS compute.
+	 * The get/set function returned by Atom is suitable for creating a CanJS compute.
 	 * KnockoutJS users can do a simple translation:
 		ko.computed({ read: baz.get, write: baz.set })
 	 *
 	 * Recommendation: Object.freeze the initial value your compute/observed
 	 * contains to prevent non-atomic modifications.
-	 *
-	 * Any modifications to objects or arrays will use simple copy operations. 
-	 * If you are using something other than plain objects and arrays, your 
-	 * data will end up converted to plain objects.
 	 */
-	function Atom(computed) {
-		return function() {
-			return compose(Lens.path.apply(Lens, arguments), computed);
-		};
+	function Atom(computed, convert) {
+		if (typeof computed !== "function") {
+			var val = computed;
+			computed = function(newVal) {
+				if (arguments.length) {
+					val = newVal;
+				}
+				return val;
+			};
+		}
+		return compose(Lens.I, computed, convert);
 	}
+
+	Atom.convert = function(Class, props) {
+		return _.extend({
+			"$this": Class
+		}, props);
+	};
+
+	Atom.convert.scalar = Lens.typed.scalar;
+
+	function from(obj, convert) {
+		if (!convert) {
+			return obj;
+		}
+		if (_.isArray(obj)) {
+			return obj.map(function(data) {
+				return from(data, convert);
+			});
+		}
+		var result = {};
+		for (var prop in obj) {
+			if (_.has(obj, prop)) {
+				result[prop] = from(obj[prop], convert[prop]);
+			}
+		}
+		return convert.$this ? new convert.$this(result) : result;
+	}
+
+
+	Atom.define = function() {
+		var convert = Atom.convert.apply(Atom, arguments);
+		function AtomType(computed) {
+			return new Atom(computed, convert);
+		}
+		AtomType.fromJSON = function(data) {
+			return from(data, convert);
+		};
+		return AtomType;
+	};
 
 	/**
 	 * Creates a converter lens

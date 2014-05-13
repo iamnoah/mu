@@ -83,4 +83,56 @@ describe("Lens", function() {
 			q.set(q.set(foo, 987), 654).bar[0].baz.qux.should.eql(654);
 		});
 	});
+
+	describe("#typed", function() {
+		function Baz(data) {
+			Object.defineProperty(this, "qux", {
+				get: function() {
+					return data && data.qux;
+				}
+			});
+			Object.freeze(this);
+		}
+		var foo = {
+			bar: [{
+				baz: new Baz({
+					qux: 123
+				}),
+				other: {}
+			}]
+		};
+		var baz = Lens.path("bar", 0, "baz", Lens.typed(Baz));
+		var qux = Lens.path("bar", 0, "baz", Lens.typed(Baz), "qux");
+
+		it("should exchange with a new instance", function() {
+			// exchange with a new instance
+			baz.get(foo).should.be.an.instanceOf(Baz);
+			baz.set(foo, new Baz({qux: 456})).bar[0].baz.should.be.an.instanceOf(Baz);
+			baz.set(foo, new Baz({qux: 456})).bar[0].baz.qux.should.eql(456);
+		});
+		
+		it("should create a new instance when setting a sub-prop", function() {
+			qux.set(foo, 789).bar[0].baz.should.be.an.instanceOf(Baz);
+			qux.set(foo, 789).bar[0].baz.qux.should.eql(789);
+		});
+			
+		it("should creates new instances with no existing data", function() {
+			qux.set({}, 789).bar[0].baz.should.be.an.instanceOf(Baz);
+			qux.set({}, 789).bar[0].baz.qux.should.eql(789);
+		});
+
+		it("should obey the lens laws", function() {
+			baz.get(baz.set(foo, new Baz({ qux: 4 }))).qux.should.eql(4);
+			baz.set(foo, baz.get(foo)).should.eql(foo);
+			baz.set(baz.set(foo, new Baz({ qux: 4 })), new Baz({ qux: 654 })).
+				bar[0].baz.qux.should.eql(654);
+		});
+
+		it("should obey the lens laws for nested props", function() {
+			qux.get(qux.set(foo, 4)).should.eql(4);
+			qux.set(foo, qux.get(foo)).should.eql(foo);
+			qux.set(qux.set(foo, 4), 654).bar[0].baz.qux.should.eql(654);
+			qux.set(qux.set(foo, 4), 654).bar[0].baz.should.be.an.instanceOf(Baz);
+		});
+	});
 });
