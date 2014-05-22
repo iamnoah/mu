@@ -1,7 +1,7 @@
 (function() {
 	"use strict";
 
-	var _ = require("lodash");
+	var _ = require("./_");
 
 	function Lens(get, set) {
 		this.get = get;
@@ -99,7 +99,7 @@
 	};
 
 	Lens.path = function() {
-		return _.reduce(arguments, function(lens, prop) {
+		return _.toArray(arguments).reduce(function(lens, prop) {
 			return lens.andThen(prop instanceof Lens ? prop :
 				typeof prop === "number" ?
 					Lens.nth(prop) : Lens.prop(prop));

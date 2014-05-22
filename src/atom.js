@@ -2,8 +2,7 @@
 	"use strict";
 
 	var Lens = require("./lens"),
-	// TODO implement the lodash funcs we use to get file size down
-		_ = require("lodash");
+		_ = require("./_");
 	/**
 	 * Creates a getter-setter combining the given Lens with the given compute.
 	 *
