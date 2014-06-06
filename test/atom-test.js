@@ -2,7 +2,7 @@
 "use strict";
 var Atom = require("../src/atom");
 var _ = require("lodash");
-require("should");
+var should = require("should");
 
 describe("Atom", function() {
 	var state;
@@ -35,6 +35,10 @@ describe("Atom", function() {
 		});
 	});
 
+	it("should allow the compute to be set to null", function() {
+		state.set(null);
+		should(state()).be.empty;
+	});
 });
 
 describe("Atom#define", function() {
