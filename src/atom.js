@@ -14,7 +14,8 @@
 	function compose(lens, computed, convert) {
 		function getterSetter(newValue) {
 			if (arguments.length) {
-				computed(Object.freeze(lens.set(computed(), newValue)));
+				var result = lens.set(computed(), newValue);
+				computed(result == null ? result : Object.freeze(result));
 				return;
 			}
 			return lens.get(computed());
