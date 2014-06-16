@@ -6,10 +6,12 @@ var should = require("should");
 
 describe("Atom", function() {
 	var state;
-	it("should create a non-observable compute function if a non-function is given", function() {
+	beforeEach(function() {
 		state = new Atom({
 			bar: 123
 		});
+	});
+	it("should create a non-observable compute function if a non-function is given", function() {
 		state().should.eql({ bar: 123 });
 	});
 	it("should reflect changes to the compute", function() {
@@ -38,6 +40,25 @@ describe("Atom", function() {
 	it("should allow the compute to be set to null", function() {
 		state.set(null);
 		should(state()).be.empty;
+	});
+
+	it("should allow values to be deleted", function() {
+		state.del("bar");
+		should("bar" in state()).be.false;
+	});
+
+	it("should support appending", function() {
+		state.focus("array").push("hi");
+		state().should.eql({
+			bar: 123,
+			array: ["hi"]
+		});
+		state.focus("array").push("there");
+
+		state().should.eql({
+			bar: 123,
+			array: ["hi", "there"]
+		});
 	});
 });
 
