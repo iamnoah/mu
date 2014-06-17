@@ -80,6 +80,29 @@ That means:
  * If your class has state that you do not want copied (e.g., bound functions,) make it non-enumerable.
  * `Object.defineProperty` is your friend. getters and setters are recommended.
 
+### Helper Methods
+
+`focus` with `get` and `set` should be able to handle 90% of what you need to do with atoms in a very DRY way. There are additional helper methods for the other 10%:
+
+
+    // Delete a Key
+    var dataCompute = compute({
+        foo: 123,
+        bar: "delete me"
+    });
+    var atom = new Atom(dataCompute);
+    atom.del("bar");
+    atom() === { foo: 123 }
+
+    // Append to an array:
+    var dataCompute = compute({
+        qux: ["hi"]
+    });
+    var atom = new Atom(dataCompute);
+    atom.focus("qux").push("mom");
+    atom() === { quz: ["hi", "mom!"] }
+
+
 ### Lenses
 
 Atom uses functional lenses internally to create focused computes. You can pass your own Lenses to focus and they will be inserted into the path.

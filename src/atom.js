@@ -26,6 +26,20 @@
 		getterSetter.set = function(newValue) {
 			getterSetter(newValue);
 		};
+		getterSetter.del = function(key) {
+			var value = getterSetter.get();
+			var result = _.isArray(value) ? value.slice(0) : _.extend({}, value);
+			delete result[key];
+			getterSetter.set(result);
+		};
+		getterSetter.push = function(value) {
+			var result = (getterSetter.get() || []).slice(0);
+			if (!_.isArray(result)) {
+				throw new Error("target is not an array!");
+			}
+			result.push(value);
+			getterSetter.set(result);
+		};
 		getterSetter.focus = focuser(getterSetter, convert);
 		return getterSetter;
 	}
