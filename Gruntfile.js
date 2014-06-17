@@ -33,16 +33,45 @@ module.exports = function(grunt) {
         },
         src: "src/compute.js",
         dest: "dist/compute.js"
+      },
+      demo: {
+        options: {
+          transform: [ require('grunt-react').browserify ]
+        },
+        src: "demo/main.jsx",
+        dest: "demo/bundle.js"        
+      }
+    },
+    connect: {
+      demo: {
+        options: {
+          livereload: true,
+        }
+      }
+    },
+    watch: {
+      demo: {
+        options: {
+          livereload: true,
+        },
+        files: [
+          "src/**/*.js",
+          "demo/main.jsx",
+        ],
+        tasks: ['browserify:demo']
       }
     }
   });
 
   // These plugins provide necessary tasks.
+  grunt.loadNpmTasks('grunt-react');
   grunt.loadNpmTasks('grunt-simple-mocha');
   grunt.loadNpmTasks('grunt-browserify');
   grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.loadNpmTasks('grunt-contrib-connect');
 
   // Default task.
   grunt.registerTask('default', ['simplemocha:all', "browserify:mu", "browserify:compute"]);
+  grunt.registerTask('demo', ["browserify:demo", "connect:demo", "watch:demo"]);
 
 };
