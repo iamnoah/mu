@@ -42,6 +42,31 @@ describe("Atom", function() {
 		should(state()).be.empty;
 	});
 
+	it("should allow the compute to be set to a non-object", function() {
+		state.set("hi");
+		state().should.be.eql("hi");
+		state.set(123);
+		state().should.be.eql(123);
+		var d = new Date();
+		state.set(d);
+		state().should.be.eql(d);
+	});
+
+	it("should prevent modifications to the data", function() {
+		state.set({
+			foo: 123,
+			bar: {
+				baz: 456
+			}
+		});
+		(function() {
+			state.get().foo = 456;
+		}).should.throw();
+		(function() {
+			state.get().bar.baz = false;
+		}).should.throw();
+	});
+
 	it("should allow values to be deleted", function() {
 		state.del("bar");
 		should("bar" in state()).be.false;

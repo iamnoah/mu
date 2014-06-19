@@ -3,6 +3,20 @@
 
 	var Lens = require("./lens"),
 		_ = require("./_");
+
+	// TODO don't freeze in production mode
+	var deepFreeze = function(obj) {
+		if (typeof obj !== "object" || obj == null) {
+			return;
+		}
+		Object.freeze(obj);
+		for(var p in obj) {
+			if (_.has(obj, p)) {
+				deepFreeze(obj[p]);
+			}
+		}
+	};
+
 	/**
 	 * Creates a getter-setter combining the given Lens with the given compute.
 	 *
@@ -15,7 +29,8 @@
 		function getterSetter(newValue) {
 			if (arguments.length) {
 				var result = lens.set(computed(), newValue);
-				computed(result == null ? result : Object.freeze(result));
+				deepFreeze(result);
+				computed(result);
 				return;
 			}
 			return lens.get(computed());
@@ -112,6 +127,7 @@
 				return val;
 			};
 		}
+		deepFreeze(computed());
 		return compose(Lens.I, computed, convert);
 	}
 
