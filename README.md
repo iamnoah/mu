@@ -103,6 +103,28 @@ That means:
     atom() === { quz: ["hi", "mom!"] }
 
 
+#### Atomic Updates
+
+Sometimes you may need to change several values at once in order for the atom to remain consistent. e.g., suppose you have an atom that stores the user's cursor position in a text editor and the current text. When the user types a character, if you update the text first, the cursor position will be wrong, but if you update the cursor posiition first, that is also wrong because the cursor would be after a character that doesn't yet exist in the text. You need to set both at the same time.
+
+If you need to atomically change more than 1 value within the atom, use update:
+
+    atom.update(function(newAtom) { // must use the passed in atom
+        newAtom.focus("foo").set(123);
+        newAtom.focus("bar", "baz").set("abc");
+    });
+
+Note that the update function receives a new atom. Only the new atom should be used to get/set values. The original atom will not show any changes until the update function returns. e.g.,
+
+    atom.update(function(newAtom) { // only use newAtom, not the out atom!
+        newAtom.focus("foo").set(123);
+        atom.focus("foo").get() !== 123 // BUG
+        atom.focus("foo").set(456) // BUG! this change will fire immediately, but be lost after this function returns!
+        newAtom.focus("bar", "baz").set("abc");
+    });
+
+Atomic updates are recommended whenever you need to change more than one property at the same time.
+
 ### Lenses
 
 Atom uses functional lenses internally to create focused computes. You can pass your own Lenses to focus and they will be inserted into the path.

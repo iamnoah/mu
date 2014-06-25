@@ -85,6 +85,44 @@ describe("Atom", function() {
 			array: ["hi", "there"]
 		});
 	});
+
+	it("should support atomic updates", function() {
+		var mockVal = {
+			data: {
+				name: "Bob",
+			},
+			state: {
+				named: {
+					count: 123,
+				},
+			},
+		};
+		var setCount = 0;
+		state = new Atom(function (val) {
+			if (arguments.length) {
+				mockVal = val;
+				setCount++;
+			}
+			return mockVal;
+		});
+
+		state.update(function(state) {
+			state.focus("data", "name").set("Barry");
+			var count = state.focus("state", "named", "count");
+			count.set(count.get() + 1);
+		});
+		state().should.eql({
+			data: {
+				name: "Barry",
+			},
+			state: {
+				named: {
+					count: 124,
+				},
+			},			
+		});
+		setCount.should.eql(1);
+	});
 });
 
 describe("Atom#define", function() {
@@ -100,10 +138,11 @@ describe("Atom#define", function() {
 		foo: convertFoo,
 		qux: convertFoo,
 	});
-	var mockVal;
+	var mockVal, setCount;
 	function mockCompute(val) {
 		if (arguments.length) {
 			mockVal = val;
+			setCount++;
 		}
 		return mockVal;
 	}
@@ -142,5 +181,22 @@ describe("Atom#define", function() {
 		mockCompute().qux[1].should.be.an.instanceOf(Foo);
 		mockCompute().foo.should.be.an.instanceOf(Foo);
 		mockCompute().should.be.an.instanceOf(Root);
+	});
+
+	it("should work with atomic updates", function() {
+		setCount = 0;
+		state.update(function(state) {
+			state.focus("qux", 1, "bar", "baz", "abc").set(111);
+			state.focus("foo", "bar", "baz", "abc").set(222);			
+		});
+		setCount.should.eql(1);
+		mockCompute().qux[1].should.be.an.instanceOf(Foo);
+		mockCompute().foo.should.be.an.instanceOf(Foo);
+
+		state.focus("foo").update(function(foo) {
+			foo.focus("hello").set("world");
+		});
+		mockCompute().foo.should.be.an.instanceOf(Foo);
+		mockCompute().foo.hello.should.eql("world");
 	});
 });

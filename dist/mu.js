@@ -86,6 +86,14 @@
 			result.push(value);
 			getterSetter.set(result);
 		};
+		getterSetter.update = function(updater) {
+			// create a new atom that holds a copy of the current state to be 
+			// modified, pass it to the updater, and update ourselves with the 
+			// result
+			var atom = new Atom(getterSetter.get(), convert);
+			updater(atom);
+			getterSetter.set(atom());
+		};
 		getterSetter.focus = focuser(getterSetter, convert);
 		return getterSetter;
 	}
@@ -93,7 +101,7 @@
 	function focuser(computed, convert) {
 		return function() {
 			// insert converters along the path so that our lens correctly sets values
-			var path = _.toArray(arguments).reduce(function(state, prop) {
+			var definition = _.toArray(arguments).reduce(function(state, prop) {
 				var convert = state.convert || {};
 				// array, so the converter applies to each item
 				// pass it along as is so it will be applied next
@@ -118,8 +126,8 @@
 			}, {
 				convert: convert,
 				path: [],
-			}).path;
-			return compose(Lens.path.apply(Lens, path), computed);
+			});
+			return compose(Lens.path.apply(Lens, definition.path), computed, definition.convert);
 		};
 	}
 
