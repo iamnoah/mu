@@ -16,6 +16,9 @@
 			});
 			return obj;
 		},
+		last: function(array) {
+			return array && array[array.length - 1];
+		},
 		isArray: function(thing) {
 			return Array.isArray(thing);
 		},
@@ -48,20 +51,15 @@
 		}
 	};
 
-	/**
-	 * Creates a getter-setter combining the given Lens with the given compute.
-	 *
-	 * @param {Lens} lens
-	 * @param {compute} computed
-	 * @return a function like that returned by atom(...) suitable for 
-	 * creating a compute.
-	 */
-	function compose(lens, computed, convert) {
+	function makeAccessor(lens, computed) {
 		function getterSetter(newValue) {
 			if (arguments.length) {
 				var result = lens.set(computed(), newValue);
 				deepFreeze(result);
-				computed(result);
+				var oldData = computed();
+				computed(interceptors.reduce(function(newData, fn) {
+					return fn(newData, oldData);
+				}, result));
 				return;
 			}
 			return lens.get(computed());
@@ -72,11 +70,45 @@
 		getterSetter.set = function(newValue) {
 			getterSetter(newValue);
 		};
-		getterSetter.del = function(key) {
-			var value = getterSetter.get();
-			var result = _.isArray(value) ? value.slice(0) : _.extend({}, value);
-			delete result[key];
-			getterSetter.set(result);
+		var interceptors = [];
+		/**
+		 * Usage:
+		 	// your interceptor will be called before any change is applied
+			atom.beforeChange(function(newData, oldData) {
+				// remember that newData is immutable so you will need to 
+				// copy it
+				// mu.Lens can be very helpful
+				return modifiedData;
+			});
+		 */	
+		getterSetter.beforeChange = function(interceptor) {
+			interceptors.push(interceptor);
+		};		
+		return getterSetter;
+	}
+
+	/**
+	 * Creates a getter-setter combining the given Lens with the given compute.
+	 *
+	 * @param {Lens} lens
+	 * @param {compute} computed
+	 * @return a function like that returned by atom(...) suitable for 
+	 * creating a compute.
+	 */
+	function compose(lens, computed, options) {
+		var getterSetter = makeAccessor(lens, computed);
+		getterSetter.del = function() {
+			var value = options.parent.get();
+			var result;
+			var key = options.parentKey;
+			if (typeof key === "number") {
+				 result = value.slice(0);
+				 result.splice(key, 1);
+			} else {
+				result = _.extend({}, value);
+				delete result[key];
+			}
+			options.parent.set(result);
 		};
 		getterSetter.push = function(value) {
 			var result = (getterSetter.get() || []).slice(0);
@@ -90,15 +122,15 @@
 			// create a new atom that holds a copy of the current state to be 
 			// modified, pass it to the updater, and update ourselves with the 
 			// result
-			var atom = new Atom(getterSetter.get(), convert);
+			var atom = new Atom(getterSetter.get(), options.convert);
 			updater(atom);
 			getterSetter.set(atom());
 		};
-		getterSetter.focus = focuser(getterSetter, convert);
+		getterSetter.focus = focuser(getterSetter, options);
 		return getterSetter;
 	}
 
-	function focuser(computed, convert) {
+	function focuser(computed, options) {
 		return function() {
 			// insert converters along the path so that our lens correctly sets values
 			var definition = _.toArray(arguments).reduce(function(state, prop) {
@@ -124,10 +156,20 @@
 					};
 				}
 			}, {
-				convert: convert,
+				convert: options.convert,
 				path: [],
 			});
-			return compose(Lens.path.apply(Lens, definition.path), computed, definition.convert);
+
+			return compose(Lens.path.apply(Lens, definition.path), computed, {
+				convert: definition.convert,
+				parent: makeAccessor(
+					Lens.path.apply(Lens, definition.path.slice(
+						0, definition.path.length  - 1)), computed),
+				parentKey: _.last(definition.path.filter(function(path) {
+					return typeof path === "number" ||
+						typeof path === "string";
+				}))
+			});
 		};
 	}
 
@@ -167,7 +209,17 @@
 			};
 		}
 		deepFreeze(computed());
-		return compose(Lens.I, computed, convert);
+		var root = compose(Lens.I, computed, {
+			convert: convert,
+		});
+		// deleting the root is a little weird but we can manage it by setting
+		// the computed to null
+		// some computed implementations will not understand setting it to 
+		// undefined
+		root.del = function() {
+			computed(null);
+		};
+		return root;
 	}
 
 	Atom.convert = function(Class, props) {
@@ -207,50 +259,6 @@
 		};
 		return AtomType;
 	};
-
-	/**
-	 * Creates a converter lens
-	 *
-	 * @param {function(JSON): T} fromJSON
-	 * @param {?function(T): JSON} toJSON
-	 */
-	// function convert(fromJSON, toJSON) {
-	// 	toJSON = toJSON || function(value) {
-	// 		return value && value.toJSON && value.toJSON() ||
-	// 			_.clone(value, true);
-	// 	};
-
-	// 	return new Lens(toJSON, function(oldData, newData) {
-	// 		return fromJSON(newData);
-	// 	});
-	// }
-
-	/**
-	 * Convenience for wrapping an instance of a serializable class.
-	 * Assumptions:
-	 *
-	 * 1. Class will be invoked by calling new Class(rawData)
-	 * 2. If toJSON is not specified and the class does not have a toJSON method,
-	 *    it will be deep cloned via _.clone(instance, true)
-	 * 3. If Class is not specified, computed() will be invoked to discover the class.
-	 *   If computed initially returns null, this will blow up.
-	 *
-	 * @param {compute} computed
-	 * @param {?function(): *} Class the constructor for creating new 
-	 * instances of the  class.
-	 * @param {?function(T): JSON} toJSON function to serialize the class 
-	 * instances.
-	 * @return {Atom} a new atom.
-	 */
-	// Atom.wrapClass = function(computed, Class, toJSON) {
-	// 	if (!Class) {
-	// 		Class = computed().constructor;
-	// 	}
-
-	// 	return new Atom(compose(convert(function(data) {
-	// 		return new Class(data);
-	// 	}, toJSON), computed));
-	// };
 
 	module.exports = Atom;
 })();
