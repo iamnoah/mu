@@ -91,7 +91,7 @@ That means:
         bar: "delete me"
     });
     var atom = new Atom(dataCompute);
-    atom.del("bar");
+    atom.focus("bar").del();
     atom() === { foo: 123 }
 
     // Append to an array:
@@ -100,7 +100,15 @@ That means:
     });
     var atom = new Atom(dataCompute);
     atom.focus("qux").push("mom");
-    atom() === { quz: ["hi", "mom!"] }
+    atom() === { qux: ["hi", "mom!"] }
+
+    // Remove from an array:
+    var dataCompute = compute({
+        qux: ["hi", "there", "mom"]
+    });
+    var atom = new Atom(dataCompute);
+    atom.focus("qux", 1).del();
+    atom() === { qux: ["hi", "mom"] }
 
 
 #### Atomic Updates

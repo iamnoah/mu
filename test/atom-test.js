@@ -1,6 +1,7 @@
 /*global describe, it*/
 "use strict";
 var Atom = require("../src/atom");
+var Lens = require("../src/lens");
 var _ = require("lodash");
 var should = require("should");
 
@@ -68,8 +69,17 @@ describe("Atom", function() {
 	});
 
 	it("should allow values to be deleted", function() {
-		state.del("bar");
+		state.focus("bar").del();
 		should("bar" in state()).be.false;
+		// should work for arrays too
+		state.focus("array").push(123);
+		state.focus("array").push(456);
+		state.focus("array").push(789);
+		state.focus("array", 1).del();
+		state().array.should.eql([123, 789]);
+
+		state.del();
+		should(state()).be.null;
 	});
 
 	it("should support appending", function() {

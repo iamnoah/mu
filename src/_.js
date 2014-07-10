@@ -15,6 +15,9 @@
 			});
 			return obj;
 		},
+		last: function(array) {
+			return array && array[array.length - 1];
+		},
 		isArray: function(thing) {
 			return Array.isArray(thing);
 		},
