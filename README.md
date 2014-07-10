@@ -133,6 +133,25 @@ Note that the update function receives a new atom. Only the new atom should be u
 
 Atomic updates are recommended whenever you need to change more than one property at the same time.
 
+### Intercepting Changes
+
+Sometimes you may need to intercept changes to the atom before they are committed. e.g., a change to one part of the data structure requires that another part be updated to remain consistent. If you make the change after the atom is updated, any observers will see an inconsistent state, potentially causing bugs.
+
+To fix this, you can use the atom's `beforeChange` method:
+
+```
+atom.beforeChange(function(newData, oldData) {
+    if (newData.foo !== oldData.foo) {
+        // remember that newData is immutable, so you have to make a copy!
+        return Object.assign({}, newData, {
+            fooChangeCount: newData.fooChangeCount + 1,
+        });
+    }
+    // whatever value you return will be the new value of the atom
+    return newData;
+});
+```
+
 ### Lenses
 
 Atom uses functional lenses internally to create focused computes. You can pass your own Lenses to focus and they will be inserted into the path.

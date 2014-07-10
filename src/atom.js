@@ -22,7 +22,10 @@
 			if (arguments.length) {
 				var result = lens.set(computed(), newValue);
 				deepFreeze(result);
-				computed(result);
+				var oldData = computed();
+				computed(interceptors.reduce(function(newData, fn) {
+					return fn(newData, oldData);
+				}, result));
 				return;
 			}
 			return lens.get(computed());
@@ -33,6 +36,20 @@
 		getterSetter.set = function(newValue) {
 			getterSetter(newValue);
 		};
+		var interceptors = [];
+		/**
+		 * Usage:
+		 	// your interceptor will be called before any change is applied
+			atom.beforeChange(function(newData, oldData) {
+				// remember that newData is immutable so you will need to 
+				// copy it
+				// mu.Lens can be very helpful
+				return modifiedData;
+			});
+		 */	
+		getterSetter.beforeChange = function(interceptor) {
+			interceptors.push(interceptor);
+		};		
 		return getterSetter;
 	}
 

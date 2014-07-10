@@ -133,6 +133,25 @@ describe("Atom", function() {
 		});
 		setCount.should.eql(1);
 	});
+
+	it("should allow changes to be intercepted", function() {
+		var count = Lens.path("counts", "even");
+		state.beforeChange(function(newState, oldState) {
+			if ((oldState.bar % 2) && (newState.bar % 2) === 0) {
+				return count.set(newState, (count.get(oldState) || 0) + 1);
+			}
+			return newState;
+		});
+
+		state.focus("bar").set(122);
+		should((state.get().counts || {}).even).eql(1);
+		state.focus("bar").set(124);
+		should((state.get().counts || {}).even).eql(1);
+		state.focus("bar").set(125);
+		should((state.get().counts || {}).even).eql(1);
+		state.focus("bar").set(126);
+		should((state.get().counts || {}).even).eql(2);
+	});
 });
 
 describe("Atom#define", function() {
