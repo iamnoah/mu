@@ -17,6 +17,28 @@
 		}
 	};
 
+	function ensure(actual, expected, message, /*private*/_stack) {
+		if(actual !== expected) {
+			var e = new Error(message);
+			e.framesToPop = (_stack || 1) + 1;
+			throw e;
+		}
+	}
+
+	function ensureArgs(args, expectedCount) {
+		ensure(args.length, expectedCount,
+			"Expected " + expectedCount +
+			" arguments but got " + args.length);
+	}
+	function ensureType(value, types, name, _stack) {
+		var actual = _.isArray(value) ? "array" : typeof value;
+		types = _.isArray(types) ? types : [types];
+		ensure(true, !!~types.indexOf(actual),
+			"Expected " + name +
+			" to be " + types.join(" or ") +
+			" but was " + actual + ": " + value, _stack || 1);
+	}
+
 	function makeAccessor(lens, computed) {
 		function getterSetter(newValue) {
 			if (arguments.length) {
@@ -33,7 +55,11 @@
 		getterSetter.get = function() {
 			return getterSetter();
 		};
-		getterSetter.set = function(newValue) {
+		getterSetter.set = function(newValue, setValue) {
+			if (arguments.length > 1) {
+				ensureArgs(arguments, 2);
+				return getterSetter.focus(newValue).set(setValue);
+			}
 			getterSetter(newValue);
 		};
 		var interceptors = [];
@@ -63,27 +89,109 @@
 	 */
 	function compose(lens, computed, options) {
 		var getterSetter = makeAccessor(lens, computed);
-		getterSetter.del = function() {
+		addHelpers(getterSetter, options);
+		getterSetter.focus = focuser(getterSetter, options);
+		return getterSetter;
+	}
+
+	function addHelpers(getterSetter, options) {
+		function assigner(a, b, index) {
+			ensureType(b, ["object"], 
+				(index ? "arg " + index + " to": "target of") +
+				" extend/assign[" +
+				(options.parentKey || "<root>") + "]", 5);
+			return _.extend(a, b);
+		}
+		function makeAssign(method) {
+			return function() {				
+				var objs = _.toArray(arguments)
+				getterSetter.set([getterSetter.get()].
+					concat(objs)[method](assigner, {}));
+			};
+		}
+		getterSetter.assign = getterSetter.extend = makeAssign("reduce");
+		getterSetter.defaults = makeAssign("reduceRight");
+
+		// delete is a special case since it changes the parent
+		getterSetter.del = getterSetter.splice = function(inKey) {
+			if (arguments.length > 0) {
+				ensureArgs(arguments, 1);
+				return getterSetter.focus(inKey).del();
+			}
 			var value = options.parent.get();
-			var result;
+			var result = value;
 			var key = options.parentKey;
+			ensureType(key, ["string", "number"], "key");			
 			if (typeof key === "number") {
-				 result = value.slice(0);
-				 result.splice(key, 1);
-			} else {
+				ensureType(value, ["array"], key);
+				result = value.slice(0);
+				result.splice(key, 1);
+			} else if(value) {
 				result = _.extend({}, value);
 				delete result[key];
 			}
 			options.parent.set(result);
 		};
-		getterSetter.push = function(value) {
-			var result = (getterSetter.get() || []).slice(0);
-			if (!_.isArray(result)) {
-				throw new Error("target is not an array!");
+
+		// add the standard array operations
+		function asArray() {
+			var result = getterSetter.get();
+			if (result) {
+				ensureType(result, ["array"], options.parentKey);
 			}
-			result.push(value);
-			getterSetter.set(result);
+			return (result || []).slice(0);			
+		}
+		function arrayOp(method, returnValue) {
+			return function() {
+				var result = asArray();
+				var out = result[method].apply(result, arguments);
+				getterSetter.set(result);
+				if (returnValue) {
+					return out;
+				}
+			};
+		}
+		getterSetter.push = arrayOp("push");
+		getterSetter.pop = arrayOp("pop", true);
+		getterSetter.shift = arrayOp("shift", true);
+		getterSetter.unshift = arrayOp("unshift");
+
+		// using an array as a set is common enough we should implement
+		// the basic operations
+		function makeIterator(iterator) {
+			if (typeof iterator === "string") {
+				var prop = iterator;
+				iterator = function(item) {
+					return item && item[prop];
+				};
+			}
+			return iterator || function(a) { return a; };
+		}
+
+		getterSetter.merge = function(other, iterator, context) {
+			iterator = makeIterator(iterator);
+			ensureType(iterator, "function", "iterator to merge");
+			var result = asArray();
+			var identities = result.map(iterator, context);
+			getterSetter.set(result.concat(other.filter(function(item) {
+				if (!~identities.indexOf(iterator.call(this, item))) {
+					identities.push(item);
+					return true;
+				}
+				return false;
+			}, context)));
 		};
+
+		getterSetter.remove = function(other, iterator, context) {
+			iterator = makeIterator(iterator);
+			ensureType(iterator, "function", "iterator to remove");
+			var result = asArray();
+			var identities = other.map(iterator, context);
+			getterSetter.set(result.filter(function(item) {
+				return !~identities.indexOf(iterator.call(this, item));
+			}, context));
+		};
+
 		getterSetter.update = function(updater) {
 			// create a new atom that holds a copy of the current state to be 
 			// modified, pass it to the updater, and update ourselves with the 
@@ -92,8 +200,6 @@
 			updater(atom);
 			getterSetter.set(atom());
 		};
-		getterSetter.focus = focuser(getterSetter, options);
-		return getterSetter;
 	}
 
 	function focuser(computed, options) {
@@ -182,7 +288,11 @@
 		// the computed to null
 		// some computed implementations will not understand setting it to 
 		// undefined
+		var realDelete = root.del;
 		root.del = function() {
+			if (arguments.length) {
+				return realDelete.apply(root, arguments);
+			}
 			computed(null);
 		};
 		return root;

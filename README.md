@@ -46,40 +46,6 @@ mu does not directly depend on a compute implementation, so you must wrap the st
 
 mu should hapilly run in any ES5 environement. i.e., IE9+, or node.
 
-### Converting Data
-
-By default, Atoms work on plain objects and arrays. Whenever you use an Atom to set a value, mu makes copies of any objects and arrays in the path and replaces the changed objects with references to the new values.
-
-If you have Classes in your data structure, you can define an Atom Type that will makes copies of your Class instead of using plain objects:
-
-    var convertFoo = Atom.convert(Foo, {
-    	bar: {
-    		baz: Atom.convert(Baz)
-    	}
-    });
-    var RootAtom = Atom.define(Root, {
-    	foo: convertFoo,
-    	qux: convertFoo,
-    });
-    
-    // fromJSON will use your converters to create your initial data
-    var root = new RootAtom(compute(RootAtom.fromJSON(rawData)));
-    root.get() instanceof Root
-    root.focus("foo").get() instanceof Foo
-    root.focus("foo", "bar", "baz", "qux").set(123)
-    root.focus("foo", "bar", "baz").get() instanceof Baz
-    root.focus("foo", "bar", "baz").get().qux === 123
-
-#### Caveat
-
-Anytime an object is updated, mu will shallow copy all the enumerable properties into a plain object, make changes to it, and then call the function you pass it as a constructor. e.g., `new YourClass(newData)`.
-
-That means:
-
- * If your class has non-enumerable state, it will be lost. Keep it simple.
- * If your class has state that you do not want copied (e.g., bound functions,) make it non-enumerable.
- * `Object.defineProperty` is your friend. getters and setters are recommended.
-
 ### Helper Methods
 
 `focus` with `get` and `set` should be able to handle 90% of what you need to do with atoms in a very DRY way. There are additional helper methods for the other 10%:
@@ -93,6 +59,12 @@ That means:
     var atom = new Atom(dataCompute);
     atom.focus("bar").del();
     atom() === { foo: 123 }
+
+    // extend/assign
+    atom.extend({
+        baz: 123,
+    });
+    atom() === { foo: 123, baz: 123 }
 
     // Append to an array:
     var dataCompute = compute({
@@ -110,6 +82,30 @@ That means:
     atom.focus("qux", 1).del();
     atom() === { qux: ["hi", "mom"] }
 
+    // in addition to push, there is pop, shift, and unshift for arrays
+
+    // if you are using an array as a set, merge and remove are helpful:
+
+    atom.focus("array").set([1,2,3]);
+    atom.focus("array").merge([3,4,5]);
+    array === [1,2,3,4,5]
+    atom.focus("array").remove([3,5]);
+    array === [1,2,4]
+
+    // merge and remove both will take a property name or iterator as the 
+    // 2nd argument to use as the identity.    
+    atom.focus("array").set([{
+        id: "foo",
+    }, {
+        id: "bar",
+    }]);
+
+    atom.focus("array").merge([{
+        id: "foo",
+    }, {
+        id: "baz",
+    }], "id");
+    // now contains foo, bar and baz
 
 #### Atomic Updates
 
@@ -157,6 +153,41 @@ atom.beforeChange(function(newData, oldData) {
 Atom uses functional lenses internally to create focused computes. You can pass your own Lenses to focus and they will be inserted into the path.
 
     TODO example
+
+
+### Converting Data
+
+By default, Atoms work on plain objects and arrays. Whenever you use an Atom to set a value, mu makes copies of any objects and arrays in the path and replaces the changed objects with references to the new values.
+
+If you have Classes in your data structure, you can define an Atom Type that will makes copies of your Class instead of using plain objects:
+
+    var convertFoo = Atom.convert(Foo, {
+        bar: {
+            baz: Atom.convert(Baz)
+        }
+    });
+    var RootAtom = Atom.define(Root, {
+        foo: convertFoo,
+        qux: convertFoo,
+    });
+    
+    // fromJSON will use your converters to create your initial data
+    var root = new RootAtom(compute(RootAtom.fromJSON(rawData)));
+    root.get() instanceof Root
+    root.focus("foo").get() instanceof Foo
+    root.focus("foo", "bar", "baz", "qux").set(123)
+    root.focus("foo", "bar", "baz").get() instanceof Baz
+    root.focus("foo", "bar", "baz").get().qux === 123
+
+#### Caveat
+
+Anytime an object is updated, mu will shallow copy all the enumerable properties into a plain object, make changes to it, and then call the function you pass it as a constructor. e.g., `new YourClass(newData)`.
+
+That means:
+
+ * If your class has non-enumerable state, it will be lost. Keep it simple.
+ * If your class has state that you do not want copied (e.g., bound functions,) make it non-enumerable.
+ * `Object.defineProperty` is your friend. getters and setters are recommended.
 
 ### mu's compute
 

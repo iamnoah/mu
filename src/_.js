@@ -5,7 +5,7 @@
 	var has = Object.prototype.hasOwnProperty;
 
 	module.exports = {
-		extend: function(obj) {
+		extend: Object.assign || function(obj) {
 			slice.call(arguments, 1).forEach(function(source) {
 				if (source) {
 					for (var prop in source) {

@@ -82,7 +82,55 @@ describe("Atom", function() {
 		should(state()).be.null;
 	});
 
-	it("should support appending", function() {
+	it("should allow keys to be deleted", function() {
+		state.del("bar");
+		("bar" in state()).should.be.false;
+
+		// should work for arrays too
+		state.focus("array").push(123);		
+		state.focus("array").push(456);
+		state.focus("array").push(789);
+		state.focus("array").del(1);
+		state().array.should.eql([123, 789]);
+	});
+
+	it("should allow assign/extend on objects", function() {
+		state.assign({
+			array: [1,2,3],
+		});
+		state().should.eql({
+			bar: 123,
+			array: [1,2,3],
+		});
+
+		(function() {
+			state.extend([]);
+		}).should.throw();
+		(function() {
+			state.focus("array").extend({});
+		}).should.throw();
+	});
+
+
+	it("should allow defaults on objects", function() {
+		state.defaults({
+			bar: 456,
+			baz: 456,
+		});
+		state().should.eql({
+			bar: 123,
+			baz: 456,
+		});
+
+		(function() {
+			state.defaults([]);
+		}).should.throw();
+		(function() {
+			state.focus("array").defaults({});
+		}).should.throw();
+	});
+
+	it("should support array ops on arrays", function() {
 		state.focus("array").push("hi");
 		state().should.eql({
 			bar: 123,
@@ -93,6 +141,68 @@ describe("Atom", function() {
 		state().should.eql({
 			bar: 123,
 			array: ["hi", "there"]
+		});
+		state.focus("array").pop().should.eql("there");
+		state.focus("array").unshift("say");
+		state().should.eql({
+			bar: 123,
+			array: ["say", "hi"]
+		});
+		state.focus("array").shift().should.eql("say");
+	});
+
+	it("should support merging arrays by identity", function() {
+		var a = state.focus("array");
+		a.set([1,2,3]);
+		a.merge([1,2,3]);
+		a.get().should.eql([1,2,3]);
+
+		a.merge([1,3,5]);
+		a.get().should.eql([1,2,3,5]);
+
+		a.set([{id:1},{id:3}]);
+		a.merge([{id:1},{id:5}], "id");
+		a.get().should.eql([{id:1},{id:3},{id:5}]);
+
+		a.merge([{id:6},{id:7}], function(obj) {
+			return obj.id % 2;
+		});
+		a.get().should.eql([{id:1},{id:3},{id:5},{id:6}]);
+	});
+
+
+	it("should allow removing by identity", function() {
+		var a = state.focus("array");
+		a.set([1,2,3]);
+		a.remove([2]);
+		a.get().should.eql([1,3]);
+
+		a.remove([5]);
+		a.get().should.eql([1,3]);
+
+		a.set([{id:1},{id:3}]);
+		a.remove([{id:1},{id:5}], "id");
+		a.get().should.eql([{id:3}]);
+
+		a.remove([{id:6},{id:7}], function(obj) {
+			return obj.id % 2;
+		});
+		a.get().should.eql([]);
+	});
+
+
+	it("should allow set/assoc semantics", function() {
+		state.set("baz", 123);
+
+		state().should.eql({
+			bar: 123,
+			baz: 123,
+		});
+		state.focus("array").set(1, "foo");
+		state().should.eql({
+			bar: 123,
+			baz: 123,
+			array: [, "foo"],
 		});
 	});
 
