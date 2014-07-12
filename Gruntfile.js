@@ -25,15 +25,6 @@ module.exports = function(grunt) {
         src: "src/mu.js",
         dest: "dist/mu.js"
       },
-      compute: {
-        options: {
-          bundleOptions: {
-            standalone: "mu.compute",
-          },
-        },
-        src: "src/compute.js",
-        dest: "dist/compute.js"
-      }
     }
   });
 
@@ -43,6 +34,6 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-watch');
 
   // Default task.
-  grunt.registerTask('default', ['simplemocha:all', "browserify:mu", "browserify:compute"]);
+  grunt.registerTask('default', ['simplemocha:all', "browserify:mu"]);
 
 };

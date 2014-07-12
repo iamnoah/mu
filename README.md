@@ -189,9 +189,9 @@ That means:
  * If your class has state that you do not want copied (e.g., bound functions,) make it non-enumerable.
  * `Object.defineProperty` is your friend. getters and setters are recommended.
 
-### mu's compute
+### compute.js
 
-A compute implementation is included if you need one.
+[compute.js](./compute-js)
 
 ## mu
 
