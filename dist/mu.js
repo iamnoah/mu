@@ -38,15 +38,17 @@
 	var Lens = _dereq_("./lens"),
 		_ = _dereq_("./_");
 
-	// TODO don't freeze in production mode
 	var deepFreeze = function(obj) {
-		if (typeof obj !== "object" || obj == null) {
-			return;
-		}
-		Object.freeze(obj);
-		for(var p in obj) {
-			if (_.has(obj, p)) {
-				deepFreeze(obj[p]);
+		if ("development" !== "production") {
+			// don't freeze in production mode
+			if (typeof obj !== "object" || obj == null) {
+				return;
+			}
+			Object.freeze(obj);
+			for(var p in obj) {
+				if (_.has(obj, p)) {
+					deepFreeze(obj[p]);
+				}
 			}
 		}
 	};

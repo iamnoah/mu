@@ -21,9 +21,24 @@ module.exports = function(grunt) {
           bundleOptions: {
             standalone: "mu",
           },
+          transform: [["envify", {
+            NODE_ENV: "development",
+          }]],
         },
         src: "src/mu.js",
-        dest: "dist/mu.js"
+        dest: "dist/mu.js",
+      },
+      muProd: {
+        options: {
+          bundleOptions: {
+            standalone: "mu",
+          },
+          transform: [["envify", {
+            NODE_ENV: "production",
+          }]],
+        },
+        src: "src/mu.js",
+        dest: "dist/mu.prod.js"
       },
     }
   });
@@ -34,6 +49,6 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-watch');
 
   // Default task.
-  grunt.registerTask('default', ['simplemocha:all', "browserify:mu"]);
+  grunt.registerTask('default', ['simplemocha:all', "browserify:mu", "browserify:muProd"]);
 
 };

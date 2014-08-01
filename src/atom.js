@@ -4,15 +4,17 @@
 	var Lens = require("./lens"),
 		_ = require("./_");
 
-	// TODO don't freeze in production mode
 	var deepFreeze = function(obj) {
-		if (typeof obj !== "object" || obj == null) {
-			return;
-		}
-		Object.freeze(obj);
-		for(var p in obj) {
-			if (_.has(obj, p)) {
-				deepFreeze(obj[p]);
+		if (process.env.NODE_ENV !== "production") {
+			// don't freeze in production mode
+			if (typeof obj !== "object" || obj == null) {
+				return;
+			}
+			Object.freeze(obj);
+			for(var p in obj) {
+				if (_.has(obj, p)) {
+					deepFreeze(obj[p]);
+				}
 			}
 		}
 	};
