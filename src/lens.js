@@ -33,7 +33,7 @@
 
 	Lens.nth = function(n) {
 		var index = n < 0 ? function(array) {
-			return array.length + n;
+			return (array && array.length + n) || 0;
 		} : function() {
 			return n;
 		};

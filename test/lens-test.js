@@ -1,6 +1,6 @@
 /*global describe, it*/
 var Lens = require("../src/lens");
-require("should");
+var should = require("should");
 
 describe("Lens", function() {
 	"use strict";
@@ -16,6 +16,11 @@ describe("Lens", function() {
 			_2.get(_2.set(array, 4)).should.eql(4);
 			_2.set(array, _2.get(array)).should.eql(array);
 			_2.set(_2.set(array, 1000), 3).should.eql(array);
+		});
+		it("should handle nulls", function() {
+			var last = Lens.nth(-1);
+			should(last.get(null)).eql(void 0);
+			last.set(null, 2).should.eql([2]);
 		});
 	});
 
