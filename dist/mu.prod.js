@@ -79,11 +79,15 @@
 		function getterSetter(newValue) {
 			if (arguments.length) {
 				var result = lens.set(computed(), newValue);
+				if (interceptors.length) {
+					var newVal = lens.get(result);
+					var oldVal = lens.get(computed());
+					result = lens.set(result, interceptors.reduce(function(newVal, fn) {
+						return fn(newVal, oldVal);
+					}, newVal));
+				}
 				deepFreeze(result);
-				var oldData = computed();
-				computed(interceptors.reduce(function(newData, fn) {
-					return fn(newData, oldData);
-				}, result));
+				computed(result);
 				return;
 			}
 			return lens.get(computed());

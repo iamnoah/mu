@@ -262,6 +262,25 @@ describe("Atom", function() {
 		state.focus("bar").set(126);
 		should((state.get().counts || {}).even).eql(2);
 	});
+
+	it("should allow changes to be intercepted on focused atoms", function() {
+		var bar = state.focus("bar");
+		bar.beforeChange(function(bar) {
+			if (bar % 2) {
+				return bar + 1;
+			}
+			return bar;
+		});
+
+		bar.set(1);
+		state.get().bar.should.eql(2);
+
+		bar.set(4);
+		state.get().bar.should.eql(4);
+
+		bar.set(11);
+		state.get().bar.should.eql(12);
+	});
 });
 
 describe("Atom#define", function() {
