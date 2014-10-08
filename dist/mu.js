@@ -236,48 +236,21 @@
 			// create a new atom that holds a copy of the current state to be 
 			// modified, pass it to the updater, and update ourselves with the 
 			// result
-			var atom = new Atom(getterSetter.get(), options.convert);
+			var atom = new Atom(getterSetter.get());
 			updater(atom);
 			getterSetter.set(atom());
 		};
 	}
 
-	function focuser(computed, options) {
+	function focuser(computed) {
 		return function() {
-			// insert converters along the path so that our lens correctly sets values
-			var definition = _.toArray(arguments).reduce(function(state, prop) {
-				var convert = state.convert || {};
-				// array, so the converter applies to each item
-				// pass it along as is so it will be applied next
-				if (typeof prop === "number") {
-					return {
-						convert: convert,
-						path: state.path.concat([prop]),
-					};
-				// convert the current object, then get the prop and its converters
-				} else if (convert.$this) {
-					return {
-						convert: convert[prop],
-						path: state.path.concat([Lens.typed(convert.$this), prop]),
-					};
-				// no converter for the current object, but keep descending
-				} else {
-					return {
-						convert: convert[prop],
-						path: state.path.concat([prop]),
-					};
-				}
-			}, {
-				convert: options.convert,
-				path: [],
-			});
+			var path = _.toArray(arguments);
 
-			return compose(Lens.path.apply(Lens, definition.path), computed, {
-				convert: definition.convert,
+			return compose(Lens.path.apply(Lens, path), computed, {
 				parent: makeAccessor(
-					Lens.path.apply(Lens, definition.path.slice(
-						0, definition.path.length  - 1)), computed),
-				parentKey: _.last(definition.path.filter(function(path) {
+					Lens.path.apply(Lens, path.slice(
+						0, path.length  - 1)), computed),
+				parentKey: _.last(path.filter(function(path) {
 					return typeof path === "number" ||
 						typeof path === "string";
 				}))
@@ -310,7 +283,7 @@
 	 * Recommendation: Object.freeze the initial value your compute/observed
 	 * contains to prevent non-atomic modifications.
 	 */
-	function Atom(computed, convert) {
+	function Atom(computed) {
 		if (typeof computed !== "function") {
 			var val = computed;
 			computed = function(newVal) {
@@ -321,9 +294,7 @@
 			};
 		}
 		deepFreeze(computed());
-		var root = compose(Lens.I, computed, {
-			convert: convert,
-		});
+		var root = compose(Lens.I, computed, {});
 		// deleting the root is a little weird but we can manage it by setting
 		// the computed to null
 		// some computed implementations will not understand setting it to 
@@ -337,44 +308,6 @@
 		};
 		return root;
 	}
-
-	Atom.convert = function(Class, props) {
-		return _.extend({
-			"$this": Class
-		}, props);
-	};
-
-	Atom.convert.scalar = Lens.typed.scalar;
-
-	function from(obj, convert) {
-		if (!convert) {
-			return obj;
-		}
-		if (_.isArray(obj)) {
-			return obj.map(function(data) {
-				return from(data, convert);
-			});
-		}
-		var result = {};
-		for (var prop in obj) {
-			if (_.has(obj, prop)) {
-				result[prop] = from(obj[prop], convert[prop]);
-			}
-		}
-		return convert.$this ? new convert.$this(result) : result;
-	}
-
-
-	Atom.define = function() {
-		var convert = Atom.convert.apply(Atom, arguments);
-		function AtomType(computed) {
-			return new Atom(computed, convert);
-		}
-		AtomType.fromJSON = function(data) {
-			return from(data, convert);
-		};
-		return AtomType;
-	};
 
 	module.exports = Atom;
 })();
