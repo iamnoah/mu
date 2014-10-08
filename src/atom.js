@@ -5,9 +5,10 @@
 		_ = require("./_");
 
 	var deepFreeze = function(obj) {
+		// don't freeze in production mode
 		if (process.env.NODE_ENV !== "production") {
-			// don't freeze in production mode
-			if (typeof obj !== "object" || obj == null) {
+			// don't freeze non-objects, null, or already frozen stuff
+			if (typeof obj !== "object" || obj == null || Object.isFrozen(obj)) {
 				return;
 			}
 			Object.freeze(obj);
