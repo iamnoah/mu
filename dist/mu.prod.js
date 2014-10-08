@@ -39,9 +39,10 @@
 		_ = _dereq_("./_");
 
 	var deepFreeze = function(obj) {
+		// don't freeze in production mode
 		if ("production" !== "production") {
-			// don't freeze in production mode
-			if (typeof obj !== "object" || obj == null) {
+			// don't freeze non-objects, null, or already frozen stuff
+			if (typeof obj !== "object" || obj == null || Object.isFrozen(obj)) {
 				return;
 			}
 			Object.freeze(obj);
@@ -524,11 +525,12 @@
 			timeBetweenStates: 0,
 		}, options);
 
-		var undos = Lens.path(options.namespace, "undos");
-		var undoing = Lens.path(options.namespace, "undoing");
-		var redoing = Lens.path(options.namespace, "redoing");
+		var root = Lens.path(options.namespace);
+		var undos = Lens.path(root, "undos");
+		var undoing = Lens.path(root, "undoing");
+		var redoing = Lens.path(root, "redoing");
 		var lastUndo = Lens.path(undos, 0, "state");
-		var lastRedo = Lens.path(options.namespace, "lastRedo");
+		var lastRedo = Lens.path(root, "lastRedo");
 		function lastChange(data) {
 			return ((undos.get(data) || [])[0] || {}).time || 0;
 		}
@@ -580,13 +582,7 @@
 		});
 
 
-		return {
-			// not sure why you might need this except for testing
-			cleanState: function() {
-				var copy = _.extend({}, atom.get());
-				delete copy[options.namespace];
-				return copy;
-			},
+		return Object.defineProperties({
 			/**
 			 * Peek at the previous state. Not sure how this is useful.
 			 * Returns:
@@ -608,7 +604,19 @@
 			redo: function() {
 				atom.set(redoing.set(atom.get(), true));
 			},
-		};
+			reset: function() {
+				atom.set(root.set(atom.get(), null));
+			},
+		}, {
+			// not sure why you might need this except for testing
+			cleanState: {
+				get: function() {
+					var copy = _.extend({}, atom.get());
+					delete copy[options.namespace];
+					return copy;
+				}
+			},
+		});
 	}
 
 	module.exports = Undo;
