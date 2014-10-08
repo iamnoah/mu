@@ -7,7 +7,7 @@
 	"eqeqeq": true,
 	"forin": true,
 	"immed": true,
-	"latedef": true,
+	"latedef": false,
 	"maxcomplexity": 5,
 	"maxdepth": 5,
 	"maxlen": 100,
