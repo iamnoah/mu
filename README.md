@@ -163,6 +163,8 @@ Need undo/redo functionality? Use the built in Undo helper:
 
     atom.set(...);
 
+    history.reset(); // optional - if you get in a state you can't undo, reset to clear the history
+
     history.undo();
     history.redo();
 
