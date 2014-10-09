@@ -14,6 +14,7 @@ describe("Lens", function() {
 		});
 		it("should obey the lens laws", function() {
 			_2.get(_2.set(array, 4)).should.eql(4);
+			_2.set(array, 3).should.exactly(array);
 			_2.set(array, _2.get(array)).should.eql(array);
 			_2.set(_2.set(array, 1000), 3).should.eql(array);
 		});
@@ -35,6 +36,7 @@ describe("Lens", function() {
 
 		it("should obey the lens laws", function() {
 			bar.get(bar.set(foo, 4)).should.eql(4);
+			bar.set(foo, 123).should.exactly(foo);
 			bar.set(foo, bar.get(foo)).should.eql(foo);
 			bar.set(bar.set(foo, 987), 654).bar.should.eql(654);
 		});
@@ -50,6 +52,7 @@ describe("Lens", function() {
 		});
 		it("should obey the lens laws", function() {
 			last.get(last.set(array, 4)).should.eql(4);
+			last.set(array, 3).should.exactly(array);
 			last.set(array, last.get(array)).should.eql(array);
 			last.set(last.set(array, 1000), 3).should.eql(array);
 		});
@@ -73,6 +76,7 @@ describe("Lens", function() {
 
 		it("should obey the lens laws", function() {
 			qux.get(qux.set(foo, 4)).should.eql(4);
+			qux.set(foo, qux.get(foo)).should.exactly(foo);
 			qux.set(foo, qux.get(foo)).should.eql(foo);
 			qux.set(qux.set(foo, 987), 654).bar[0].baz.qux.should.eql(654);
 		});
