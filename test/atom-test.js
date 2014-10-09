@@ -263,6 +263,20 @@ describe("Atom", function() {
 		should((state.get().counts || {}).even).eql(2);
 	});
 
+	it("should not intercept non-changes", function() {
+		var expectChange = false;
+		state.beforeChange(function(newState) {
+			expectChange.should.be.true;
+			return newState;
+		});
+
+		state.focus("bar").set(123);
+		expectChange = true;
+		state.focus("bar").set(124);
+		expectChange = false;
+		state.focus("bar").set(124);
+	});
+
 	it("should allow changes to be intercepted on focused atoms", function() {
 		var bar = state.focus("bar");
 		bar.beforeChange(function(bar) {

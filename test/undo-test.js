@@ -18,11 +18,11 @@ describe("Undo", function() {
 	});
 	it("should remember 1 state per time between states", function(done) {
 		// should be no change or error if there is nothing to undo
-		undo.cleanState().should.eql({
+		undo.cleanState.should.eql({
 			bar: 123,
 		});
 		undo.undo();
-		undo.cleanState().should.eql({
+		undo.cleanState.should.eql({
 			bar: 123,
 		});
 
@@ -38,7 +38,7 @@ describe("Undo", function() {
 
 			// should always remember the initial state
 			undo.undo();
-			undo.cleanState().should.eql({
+			undo.cleanState.should.eql({
 				bar: 2,
 				baz: "1st set",
 			});
@@ -47,13 +47,13 @@ describe("Undo", function() {
 			// initial state
 			undo.undo();
 			should(baz.get()).be.empty;
-			undo.cleanState().should.eql({
+			undo.cleanState.should.eql({
 				bar: 123,
 			});
 
 			// back to 1st state
 			undo.redo();
-			undo.cleanState().should.eql({
+			undo.cleanState.should.eql({
 				bar: 2,
 				baz: "1st set",
 			});
@@ -61,7 +61,7 @@ describe("Undo", function() {
 
 			// back to most recent state
 			undo.redo();
-			undo.cleanState().should.eql({
+			undo.cleanState.should.eql({
 				bar: 2,
 				baz: "def",
 			});
@@ -69,7 +69,7 @@ describe("Undo", function() {
 
 			// no more states (no error, no change)
 			undo.redo();
-			undo.cleanState().should.eql({
+			undo.cleanState.should.eql({
 				bar: 2,
 				baz: "def",
 			});
@@ -127,5 +127,20 @@ describe("Undo", function() {
 
 			done();
 		}
+	});
+
+	it("should be able to clear history", function() {
+		var bar = state.focus("bar");
+		bar.set(3);
+		undo.reset();
+		bar.set(5);
+
+		bar.get().should.eql(5);
+		undo.undo();
+		bar.get().should.eql(3);
+
+		// no more history
+		undo.undo();
+		bar.get().should.eql(3);
 	});
 });

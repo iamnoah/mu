@@ -5,9 +5,10 @@
 		_ = require("./_");
 
 	var deepFreeze = function(obj) {
+		// don't freeze in production mode
 		if (process.env.NODE_ENV !== "production") {
-			// don't freeze in production mode
-			if (typeof obj !== "object" || obj == null) {
+			// don't freeze non-objects, null, or already frozen stuff
+			if (typeof obj !== "object" || obj == null || Object.isFrozen(obj)) {
 				return;
 			}
 			Object.freeze(obj);
@@ -43,11 +44,12 @@
 
 	function makeAccessor(lens, computed) {
 		function getterSetter(newValue) {
+			var target = computed();
 			if (arguments.length) {
-				var result = lens.set(computed(), newValue);
-				if (interceptors.length) {
+				var result = lens.set(target, newValue);
+				if (interceptors.length && result !== target) {
 					var newVal = lens.get(result);
-					var oldVal = lens.get(computed());
+					var oldVal = lens.get(target);
 					result = lens.set(result, interceptors.reduce(function(newVal, fn) {
 						return fn(newVal, oldVal);
 					}, newVal));
@@ -56,7 +58,7 @@
 				computed(result);
 				return;
 			}
-			return lens.get(computed());
+			return lens.get(target);
 		}
 		getterSetter.get = function() {
 			return getterSetter();
