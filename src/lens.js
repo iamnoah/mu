@@ -94,36 +94,6 @@
 		});
 	};
 
-	// XXX this isn't really so bad. a shallow copy will be made of the 
-	// enumerable properties of the class, then a new instance will be 
-	// constructed from that.
-	/**
-	 * Create a lens that ensures that the value set is of the given type (by
-	 * instantiating a new instance of the Type.)
-	 * This violates the first lens law and is probably not a good idea.
-	 */
-	Lens.typed = function(Class) {
-		return new Lens(function(instance) {
-			return instance;
-		}, function(oldInstance, newData) {
-			var result = new Class(newData);
-			return result instanceof Scalar ? result.value : result;
-		});
-	};
-
-	function Scalar(value) {
-		this.value = value;
-	}
-
-	/**
-	 * Lens.typed creates a new instance via new Class(newData). If you need a
-	 * scalar value (string, number, etc.) you cannot return it from a 
-	 * constructor. So return Lens.typed.scalar(value) instead.
-	 */
-	Lens.typed.scalar = function(value) {
-		return new Scalar(value);
-	};
-
 	Lens.path = function() {
 		return _.toArray(arguments).reduce(function(lens, prop) {
 			return lens.andThen(prop instanceof Lens ? prop :
