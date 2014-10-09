@@ -129,6 +129,51 @@ describe("Undo", function() {
 		}
 	});
 
+	it("can filter out unimportant changes", function() {
+		state = new Atom({
+			important: {
+				bar: 123
+			},
+			stupid: {
+				baz: "foo",
+			},
+		});		
+		undo = new Undo(state, {
+			isImportantChange: function(newState, oldState) {
+				return newState.important !== oldState.important;
+			},
+		});
+
+		state.focus("important", "bar").set(456);
+
+		state.focus("stupid", "baz").set("abc");
+
+		state.focus("important", "bar").set(789);
+		
+		state.get().important.bar.should.eql(789);
+		state.get().stupid.baz.should.eql("abc");
+
+		// first important state is before we changed bar to 789
+		undo.undo();
+		state.get().important.bar.should.eql(456);
+		state.get().stupid.baz.should.eql("abc");
+
+		// initial state
+		undo.undo();
+		state.get().important.bar.should.eql(123);
+		state.get().stupid.baz.should.eql("foo");
+
+		// back to important state
+		undo.redo();
+		state.get().important.bar.should.eql(456);
+		state.get().stupid.baz.should.eql("abc");
+
+		// back to ultimate state
+		undo.redo();
+		state.get().important.bar.should.eql(789);
+		state.get().stupid.baz.should.eql("abc");
+	});
+
 	it("should be able to clear history", function() {
 		var bar = state.focus("bar");
 		bar.set(3);

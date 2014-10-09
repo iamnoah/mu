@@ -177,6 +177,17 @@ By default, all changes will be kept. Since persistent data structures reuse mos
 
 `timeBetweenStates` will make the history "lossy" in that an undo may revert multiple distinct changes, if they all happened within that time period. This can be good if, for example, you were to update your atom on every keystroke, so your user does not have to undo every single keystroke.
 
+You can also filter out undo states that are not important, like transient state changes and internal book keeping.
+
+```javascript
+mu.Undo(atom, {
+    isImportantChange: function(newState, oldState) {
+        return true/false;
+    },
+})
+```
+If your function returns false, no entry will be made for that change, but the next truely important change will include whatever unimportant state changes happened.
+
 ### compute.js
 
 [compute.js](./compute-js)
