@@ -78,11 +78,12 @@
 
 	function makeAccessor(lens, computed) {
 		function getterSetter(newValue) {
+			var target = computed();
 			if (arguments.length) {
-				var result = lens.set(computed(), newValue);
-				if (interceptors.length) {
+				var result = lens.set(target, newValue);
+				if (interceptors.length && result !== target) {
 					var newVal = lens.get(result);
-					var oldVal = lens.get(computed());
+					var oldVal = lens.get(target);
 					result = lens.set(result, interceptors.reduce(function(newVal, fn) {
 						return fn(newVal, oldVal);
 					}, newVal));
@@ -91,7 +92,7 @@
 				computed(result);
 				return;
 			}
-			return lens.get(computed());
+			return lens.get(target);
 		}
 		getterSetter.get = function() {
 			return getterSetter();
@@ -386,9 +387,34 @@
 
 	var _ = _dereq_("./_");
 
+	/**
+	 * Lens Laws:
+	 *
+	 * 1. You get back what you put in.
+		l.get(l.set(o, v)) === v
+	 * Any custom lens probably does this by default, but you can screw it up, 
+	 * so be careful.
+	 * 2. Putting back what you got doesn't change anything:		
+		l.set(o, l.get(o)) === o
+	 * This is enforced by Lens, but if you violated #1, it could break it.
+	 * 3. Setting twice is the same as setting once:
+		l.set(l.set(o, v) v2) === l.set(o, v2)
+	 * To violate this one, your lens would probably need to have some sort of 
+	 * state, or impure input or something like that. So just don't do that.
+	 *
+	 * To summarize: Make sure your lenses are pure functions, and don't
+	 * transform what gets put in by set in a way that isn't fully reversible.
+	 */
 	function Lens(get, set) {
 		this.get = get;
-		this.set = set;
+		this.set = function(target, newValue) {
+			// 2nd lens law: putting back what you got doesn't change anything
+			// so we should preserve object references whenever possible.
+			if (get.call(this, target) === newValue) {
+				return target;
+			}
+			return set.call(this, target, newValue);
+		};
 	}
 
 	Lens.prototype.mod = function(a, f) {
@@ -458,6 +484,7 @@
 	/**
 	 * Create a lens that ensures that the value set is of the given type (by
 	 * instantiating a new instance of the Type.)
+	 * This violates the first lens law and is probably not a good idea.
 	 */
 	Lens.typed = function(Class) {
 		return new Lens(function(instance) {
