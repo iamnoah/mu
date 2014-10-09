@@ -11,6 +11,7 @@
 	 */
 	function Undo(atom, options) {
 		options = _.extend({
+			isImportantChange: function() { return true; },
 			maxStates: Number.POSITIVE_INFINITY,
 			namespace: "__mu-undo-redo-history__",
 			timeBetweenStates: 0,
@@ -31,7 +32,8 @@
 			// if the last change was > 2 seconds ago, remember the current
 			// state (unless we are currently undoing or redoing)
 			if ((Date.now() - options.timeBetweenStates) >= lastChange(root) &&
-					!undoing.get(root) && !redoing.get(root)) {
+					!undoing.get(root) && !redoing.get(root) &&
+					options.isImportantChange(root, lastRoot)) {
 				return lastRedo.set(undos.mod(root, function(data) {
 					return [{
 						// XXX store without the undos, so we can limit the size
