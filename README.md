@@ -155,39 +155,27 @@ Atom uses functional lenses internally to create focused computes. You can pass 
     TODO example
 
 
-### Converting Data
+### Undo/Redo Support
 
-By default, Atoms work on plain objects and arrays. Whenever you use an Atom to set a value, mu makes copies of any objects and arrays in the path and replaces the changed objects with references to the new values.
+Need undo/redo functionality? Use the built in Undo helper:
 
-If you have Classes in your data structure, you can define an Atom Type that will makes copies of your Class instead of using plain objects:
+    var history = mu.Undo(atom);
 
-    var convertFoo = Atom.convert(Foo, {
-        bar: {
-            baz: Atom.convert(Baz)
-        }
-    });
-    var RootAtom = Atom.define(Root, {
-        foo: convertFoo,
-        qux: convertFoo,
-    });
-    
-    // fromJSON will use your converters to create your initial data
-    var root = new RootAtom(compute(RootAtom.fromJSON(rawData)));
-    root.get() instanceof Root
-    root.focus("foo").get() instanceof Foo
-    root.focus("foo", "bar", "baz", "qux").set(123)
-    root.focus("foo", "bar", "baz").get() instanceof Baz
-    root.focus("foo", "bar", "baz").get().qux === 123
+    atom.set(...);
 
-#### Caveat
+    history.reset(); // optional - if you get in a state you can't undo, reset to clear the history
 
-Anytime an object is updated, mu will shallow copy all the enumerable properties into a plain object, make changes to it, and then call the function you pass it as a constructor. e.g., `new YourClass(newData)`.
+    history.undo();
+    history.redo();
 
-That means:
+By default, all changes will be kept. Since persistent data structures reuse most of their references, each additional change is generally very small, as you typically just need `O(log n)` new pointers. But if your state changes constantly and/or you have memory problems, you can limit how many states are kept, and how frequently new states are recorded:
 
- * If your class has non-enumerable state, it will be lost. Keep it simple.
- * If your class has state that you do not want copied (e.g., bound functions,) make it non-enumerable.
- * `Object.defineProperty` is your friend. getters and setters are recommended.
+    mu.Undo(atom, {
+        maxStates: 20, // keep only the last 20 states
+        timeBetweenStates: 2000, // save state at most every 2 seconds
+    })
+
+`timeBetweenStates` will make the history "lossy" in that an undo may revert multiple distinct changes, if they all happened within that time period. This can be good if, for example, you were to update your atom on every keystroke, so your user does not have to undo every single keystroke.
 
 ### compute.js
 
