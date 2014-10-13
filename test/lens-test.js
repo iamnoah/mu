@@ -93,4 +93,29 @@ describe("Lens", function() {
 		});
 	});
 
+	describe("#Delete", function() {
+		var foo = {
+			bar: [{
+				baz: {
+					qux: 123
+				},
+				other: {}
+			}, {
+				foo: 123,
+			}]
+		};
+
+		var baz = Lens.path("bar", 0, "baz");
+		var bar2 = Lens.path("bar", 1);
+		var qux = Lens.path(baz, "qux");
+
+		it("should delete keys in an object", function() {
+			baz.get(qux.set(foo, Lens.Delete)).should.not.have.property("qux");
+		});
+
+		it("should splice elements from an array", function() {
+			bar2.set(foo, Lens.Delete).bar.should.have.length(1);
+		});
+	});
+
 });

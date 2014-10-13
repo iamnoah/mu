@@ -20,6 +20,7 @@
 	 *
 	 * To summarize: Make sure your lenses are pure functions, and don't
 	 * transform what gets put in by set in a way that isn't fully reversible.
+	 * Also, note the special value of Lens.Delete
 	 */
 	function Lens(get, set) {
 		this.get = get;
@@ -66,7 +67,11 @@
 			return array && array[index(array)];
 		}, function(array, val) {
 			var copy = (array || []).slice(0);
-			copy[index(array)] = val;
+			if (val === Delete) {
+				copy.splice(index(array), 1);
+			} else {
+				copy[index(array)] = val;
+			}
 			return copy;
 		});
 	};
@@ -83,13 +88,35 @@
 		return copy;
 	}
 
+	/**
+	 * Delete is a special case for objects and arrays. It's not enough to just
+	 * set a value to undefined because the key will still be enumerable/counted.
+	 *
+	 * Passing Lens.Delete to set() for any built-in lens is equivalent to 
+	 * deleting that key on an object, or splicing it out of an array.
+	 *
+	 * If you implement your own lens, be sure that it will handle Delete 
+	 * properly.
+	 */
+	var Delete = {};
+	Object.defineProperty(Delete, "valueOf", {
+		value: function() {},
+	});
+	Object.defineProperty(Lens, "Delete", {
+		value: Object.freeze(Delete),
+	});
+
 	Lens.prop = function(property) {
 		return new Lens(function(obj) {
 			return obj && obj[property];
 		}, function(obj, val) {
 			// shallow copy and write
 			var copy = copyObj(obj || {});
-			copy[property] = val;
+			if (val === Delete) {
+				delete copy[property];
+			} else {
+				copy[property] = val;
+			}
 			return copy;
 		});
 	};

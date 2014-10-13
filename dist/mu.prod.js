@@ -129,24 +129,23 @@
 	 * @return a function like that returned by atom(...) suitable for 
 	 * creating a compute.
 	 */
-	function compose(lens, computed, options) {
+	function compose(lens, computed) {
 		var getterSetter = makeAccessor(lens, computed);
-		addHelpers(getterSetter, options);
-		getterSetter.focus = focuser(getterSetter, options);
+		addHelpers(getterSetter);
+		getterSetter.focus = focuser(getterSetter);
 		return getterSetter;
 	}
 
-	function addHelpers(getterSetter, options) {
+	function addHelpers(getterSetter) {
 		function assigner(a, b, index) {
 			ensureType(b, ["object"], 
 				(index ? "arg " + index + " to": "target of") +
-				" extend/assign[" +
-				(options.parentKey || "<root>") + "]", 5);
+				" extend/assign", 5);
 			return _.extend(a, b);
 		}
 		function makeAssign(method) {
 			return function() {				
-				var objs = _.toArray(arguments)
+				var objs = _.toArray(arguments);
 				getterSetter.set([getterSetter.get()].
 					concat(objs)[method](assigner, {}));
 			};
@@ -154,33 +153,17 @@
 		getterSetter.assign = getterSetter.extend = makeAssign("reduce");
 		getterSetter.defaults = makeAssign("reduceRight");
 
-		// delete is a special case since it changes the parent
 		getterSetter.del = getterSetter.splice = function(inKey) {
 			if (arguments.length > 0) {
 				ensureArgs(arguments, 1);
 				return getterSetter.focus(inKey).del();
 			}
-			var value = options.parent.get();
-			var result = value;
-			var key = options.parentKey;
-			ensureType(key, ["string", "number"], "key");			
-			if (typeof key === "number") {
-				ensureType(value, ["array"], key);
-				result = value.slice(0);
-				result.splice(key, 1);
-			} else if(value) {
-				result = _.extend({}, value);
-				delete result[key];
-			}
-			options.parent.set(result);
+			getterSetter.set(Lens.Delete);
 		};
 
 		// add the standard array operations
 		function asArray() {
 			var result = getterSetter.get();
-			if (result) {
-				ensureType(result, ["array"], options.parentKey);
-			}
 			return (result || []).slice(0);			
 		}
 		function arrayOp(method, returnValue) {
@@ -247,16 +230,7 @@
 	function focuser(computed) {
 		return function() {
 			var path = _.toArray(arguments);
-
-			return compose(Lens.path.apply(Lens, path), computed, {
-				parent: makeAccessor(
-					Lens.path.apply(Lens, path.slice(
-						0, path.length  - 1)), computed),
-				parentKey: _.last(path.filter(function(path) {
-					return typeof path === "number" ||
-						typeof path === "string";
-				}))
-			});
+			return compose(Lens.path.apply(Lens, path), computed);
 		};
 	}
 
@@ -296,7 +270,7 @@
 			};
 		}
 		deepFreeze(computed());
-		var root = compose(Lens.I, computed, {});
+		var root = compose(Lens.I, computed);
 		// deleting the root is a little weird but we can manage it by setting
 		// the computed to null
 		// some computed implementations will not understand setting it to 
@@ -337,6 +311,7 @@
 	 *
 	 * To summarize: Make sure your lenses are pure functions, and don't
 	 * transform what gets put in by set in a way that isn't fully reversible.
+	 * Also, note the special value of Lens.Delete
 	 */
 	function Lens(get, set) {
 		this.get = get;
@@ -383,7 +358,11 @@
 			return array && array[index(array)];
 		}, function(array, val) {
 			var copy = (array || []).slice(0);
-			copy[index(array)] = val;
+			if (val === Delete) {
+				copy.splice(index(array), 1);
+			} else {
+				copy[index(array)] = val;
+			}
 			return copy;
 		});
 	};
@@ -400,13 +379,35 @@
 		return copy;
 	}
 
+	/**
+	 * Delete is a special case for objects and arrays. It's not enough to just
+	 * set a value to undefined because the key will still be enumerable/counted.
+	 *
+	 * Passing Lens.Delete to set() for any built-in lens is equivalent to 
+	 * deleting that key on an object, or splicing it out of an array.
+	 *
+	 * If you implement your own lens, be sure that it will handle Delete 
+	 * properly.
+	 */
+	var Delete = {};
+	Object.defineProperty(Delete, "valueOf", {
+		value: function() {},
+	});
+	Object.defineProperty(Lens, "Delete", {
+		value: Object.freeze(Delete),
+	});
+
 	Lens.prop = function(property) {
 		return new Lens(function(obj) {
 			return obj && obj[property];
 		}, function(obj, val) {
 			// shallow copy and write
 			var copy = copyObj(obj || {});
-			copy[property] = val;
+			if (val === Delete) {
+				delete copy[property];
+			} else {
+				copy[property] = val;
+			}
 			return copy;
 		});
 	};

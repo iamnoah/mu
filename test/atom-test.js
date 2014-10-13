@@ -87,11 +87,17 @@ describe("Atom", function() {
 		("bar" in state()).should.be.false;
 
 		// should work for arrays too
-		state.focus("array").push(123);		
+		state.focus("array").push(123);
 		state.focus("array").push(456);
 		state.focus("array").push(789);
 		state.focus("array").del(1);
 		state().array.should.eql([123, 789]);
+	});
+	it("should allow delete through other lenses", function() {
+		state.focus("array").push(123);
+		state.focus("array").push(456);
+		state.focus("array", 1, Lens.I).del();
+		state().array.should.eql([123]);
 	});
 
 	it("should allow assign/extend on objects", function() {
